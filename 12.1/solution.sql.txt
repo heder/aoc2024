@@ -1,0 +1,71 @@
+-- Solution 1
+WITH Tally AS (
+	SELECT 1 AS n
+	UNION ALL
+	SELECT n + 1
+	FROM Tally
+	WHERE n < 100
+)
+select 
+	plant_type,
+	geom,
+	geom.STArea(),
+	geom.STLength(),
+	geom.STArea() * geom.STLength() as s
+from 
+(
+	select 
+		plant_type, 
+		s1.geom.STGeometryN(n.n) as geom 
+	from
+	(
+		SELECT 
+		plant_Type,
+		geom,
+		geom.STNumGeometries() n
+			from
+		(select plant_type, geometry::UnionAggregate (geom) geom from u11 group by plant_Type) g
+	) s1
+	CROSS APPLY (select * from tally t where t.n <= s1.n) AS n
+) a
+
+
+
+-- Solution 2
+WITH Tally AS (
+	SELECT 1 AS n
+	UNION ALL
+	SELECT n + 1
+	FROM Tally
+	WHERE n < 100
+)
+select
+	plant_type,
+	geom,
+	geom.STArea(),
+	p,
+	geom.STArea() * p
+from
+(
+	select
+		*,
+		geom.Reduce(0).STNumPoints() - (geom.STNumGeometries() + geom.STNumInteriorRing())  p
+	from 
+	(
+		select 
+			plant_type, 
+			s1.geom.STGeometryN(n.n) as geom,
+			s1.n,
+			s1.geom.STNumPoints() points
+		from
+		(
+			SELECT 
+			plant_Type,
+			geom geom,
+			geom.STNumGeometries() n
+				from
+			(select plant_type, geometry::UnionAggregate (geom) geom from u11 group by plant_Type) g
+		) s1
+		CROSS APPLY (select * from tally t where t.n <= s1.n) AS n
+	) a
+) b
