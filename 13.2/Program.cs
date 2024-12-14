@@ -24,9 +24,6 @@ class Machine
     }
 }
 
-
-
-
 class Program
 {
     private static List<Machine> machines = [];
@@ -83,117 +80,24 @@ class Program
 
         foreach (var m in machines)
         {
-            long a_n = 0;
-            long b_n = 0;
+            // (a_n * a_x) + (b_n * b_x) = p_x
+            // (a_n * a_y) + (b_n * b_y) = p_y
 
-            for (long na = 0; na <= 10000000000000; na++)
+            // Cramer's rule!
+            m.a_n = (m.Prize_X * m.B_Y - m.Prize_Y * m.B_X) / (m.A_X * m.B_Y - m.A_Y * m.B_X);
+            m.b_n = (m.A_X * m.Prize_Y - m.A_Y * m.Prize_X) / (m.A_X * m.B_Y - m.A_Y * m.B_X);
+
+            if (m.a_n * m.A_X + m.b_n * m.B_X != m.Prize_X || m.a_n * m.A_Y + m.b_n * m.B_Y != m.Prize_Y)
             {
-
-
-                if (na == 10000000000000)
-                {
-                    m.CanWin = false;
-                    goto earlyExit;
-                }
-
-
-                a_n = 0;
-                b_n = 0;
-
-                long currentX = 0;
-                long currentY = 0;
-
-                for (; a_n < na; a_n++)
-                {
-                    currentX += m.A_X;
-                    currentY += m.A_Y;
-
-                    if (currentX == m.Prize_X && currentY == m.Prize_Y)
-                    {
-                        m.CanWin = true;
-                        goto earlyExit;
-                    }
-
-                    if (currentX > m.Prize_X || currentY > m.Prize_Y)
-                    {
-                        goto ee;
-                    }
-                }
-
-                for (; b_n < 100000; b_n++)
-                {
-                    currentX += m.B_X;
-                    currentY += m.B_Y;
-
-                    if (currentX == m.Prize_X && currentY == m.Prize_Y)
-                    {
-                        m.CanWin = true;
-                        goto earlyExit;
-                    }
-
-                    if (currentX > m.Prize_X || currentY > m.Prize_Y)
-                    {
-                        goto ee;
-                    }
-                }
-
-            ee:;
+                m.CanWin = false;
             }
-
-        earlyExit:;
-            m.a_n = a_n;
-            m.b_n = (b_n + 1);
+            else
+            {
+                m.CanWin = true;
+            }
         }
 
         Console.WriteLine(machines.Where(f => f.CanWin == true).Sum(f => f.Prize));
         Console.ReadKey();
-
-
-        //var s = line.Split(" ").Select(long.Parse);
-
-        //Dictionary<long, LinkedListNode<long>> nodes = [];
-        //LinkedList<long> stones = [];
-
-        //foreach (var item in s)
-        //{
-        //    var lln = stones.AddLast(item);
-        //    nodes.Add(item, lln);
-        //}
-
-        //for (int n = 0; n < 25; n++)
-        //{
-        //    var stone = stones.First;
-
-        //    do
-        //    {
-        //        if (stone.Value == 0)
-        //        {
-        //            stone.Value = 1;
-        //        }
-        //        else if (stone.Value.ToString().Length % 2 == 0)
-        //        {
-        //            var s1 = stone.Value.ToString().Substring(0, stone.Value.ToString().Length / 2);
-        //            var s2 = stone.Value.ToString().Substring(stone.Value.ToString().Length / 2);
-
-        //            var nxt = stones.AddAfter(stone, Convert.ToInt64(s2));
-        //            stones.AddAfter(stone, Convert.ToInt64(s1));
-
-        //            stones.Remove(stone);
-
-        //            stone = nxt;
-        //        }
-        //        else
-        //        {
-        //            stone.Value = stone.Value * 2024;
-        //        }
-
-
-        //        stone = stone.Next;
-        //    }
-        //    while (stone != null);
-        //}
-
-        //var sum = stones.Count();
-
     }
 }
