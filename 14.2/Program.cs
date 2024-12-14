@@ -79,9 +79,7 @@ class Program
             DumpWorld(i);
         }
 
-        Console.WriteLine(q1 * q2 * q3 * q4);
         Console.ReadKey();
-
 
         // Kolla igenom 10k små png:er manuellt? Ja, varför inte? ;-)
         void DumpWorld(int iteration)
