@@ -12,8 +12,8 @@
     {
         Empty = 0,
         Wall = 1,
-        Blocker = 2,
-        Robot = 3
+        Reindeer = 3,
+        End = 4
     }
 
     class Coord
@@ -26,7 +26,7 @@
     {
         public Coord Coordinate { get; set; } = new();
         public TileType Type { get; set; }
-
+        public int Score { get; set; } = -1;
     }
 
     private static Tile[,] world;
@@ -36,6 +36,8 @@
 
     private static int currentX = 0;
     private static int currentY = 0;
+    private static Direction currentDirection = Direction.Right;
+    private static int currentScore = 0;
 
     private static List<Direction> movements = [];
 
@@ -45,15 +47,6 @@
 
         xmax = lines[0].Length;
         ymax = lines.Count();
-
-        for (int i = 0; i < lines.Count(); i++)
-        {
-            if (lines[i].Trim().Length == 0)
-            {
-                ymax = i;
-                break;
-            }
-        }
 
         world = new Tile[xmax, ymax];
 
@@ -74,13 +67,13 @@
                     case '#':
                         t.Type = TileType.Wall;
                         break;
-                    case 'O':
-                        t.Type = TileType.Blocker;
-                        break;
-                    case '@':
-                        t.Type = TileType.Robot;
+                    case 'S':
+                        t.Type = TileType.Reindeer;
                         currentX = x;
                         currentY = y;
+                        break;
+                    case 'E':
+                        t.Type = TileType.End;
                         break;
                 }
 
@@ -88,125 +81,196 @@
             }
         }
 
-        for (int i = ymax + 1; i < lines.Length; i++)
-        {
-            foreach (var c in lines[i])
-            {
-                Direction movement;
-
-                switch (c)
-                {
-                    case '^':
-                        movement = Direction.Up;
-                        break;
-                    case 'v':
-                        movement = Direction.Down;
-                        break;
-                    case '<':
-                        movement = Direction.Left;
-                        break;
-                    case '>':
-                        movement = Direction.Right;
-                        break;
-                    default:
-                        throw new Exception("Invalid movement");
-                }
-
-                movements.Add(movement);
-            }
-        }
-
         Dumpworld();
 
-        foreach (var m in movements)
-        {
-            Console.WriteLine($"Going to move {m.ToString()}");
-            Move(m);
-        }
+        world[currentX, currentY].Score = currentScore; // 0;
 
-        int sum = 0;
-        for (int y = 0; y < ymax; y++)
-        {
-            for (int x = 0; x < xmax; x++)
-            {
-                if (world[x, y].Type == TileType.Blocker)
-                {
-                    sum += (100 * y) + x;
-                }
-            }
-        }
-
-        Console.WriteLine(sum);
+        Traverse();
+        
+        Console.WriteLine();
         Console.ReadKey();
-    }
 
-    private static void Move(Direction m)
-    {
-        int deltaX;
-        int deltaY;
 
-        switch (m)
+        void Traverse()
         {
-            case Direction.Up:
-                deltaX = 0;
-                deltaY = -1;
-                break;
-            case Direction.Down:
-                deltaX = 0;
-                deltaY = 1;
-                break;
-            case Direction.Left:
-                deltaX = -1;
-                deltaY = 0;
-                break;
-            case Direction.Right:
-                deltaX = 1;
-                deltaY = 0;
-                break;
-            default:
-                throw new Exception("Invalid movement");
+            while 
+
+            var directions = GetFreeDirections();
+
+            foreach (var item in directions)
+            {
+                Move(item);
+                Dumpworld();
+                Console.WriteLine(currentScore);
+            }
         }
 
-        // Spin to find the next empty spot in the direction of movement
-        int x = currentX + deltaX;
-        int y = currentY + deltaY;
-        List<Tile> tomove = new();
 
-        while (world[x, y].Type != TileType.Empty)
+        void Move(Direction d)
         {
-            if (x < 0 || x >= xmax || y < 0 || y >= ymax || world[x, y].Type == TileType.Wall)
+            // New direction, turn first
+            if (d != currentDirection)
             {
-                // Movement not possible
-                tomove.Clear();
-                return;
+                currentScore += 1000;
+                world[currentX, currentY].Score = currentScore;
+                currentDirection = d;
             }
 
-            tomove.Add(world[x, y]);
-            x += deltaX;
-            y += deltaY;
+            world[currentX, currentY].Type = TileType.Empty;
+
+            switch (currentDirection)
+            {
+                case Direction.Up:
+                    currentY--;
+                    break;
+                case Direction.Down:
+                    currentY++;
+                    break;
+                case Direction.Left:
+                    currentX--;
+                    break;
+                case Direction.Right:
+                    currentX++;
+                    break;
+            }
+
+            world[currentX, currentY].Type = TileType.Reindeer;
+
+            currentScore += 1;
+            world[currentX, currentY].Score = currentScore;
         }
 
-        tomove.Reverse();
 
-        foreach (var t in tomove)
+
+        List<Direction> GetFreeDirections()
         {
-            int destX = t.Coordinate.X + deltaX;
-            int destY = t.Coordinate.Y + deltaY;
+            var t = new List<Direction>();
 
-            int srcX = t.Coordinate.X;
-            int srcY = t.Coordinate.Y;
+            if (world[currentX - 1, currentY].Type == TileType.Empty)
+            {
+                t.Add(Direction.Left);
+            }
 
-            world[destX, destY].Type = TileType.Blocker;
-            world[srcX, srcY].Type = TileType.Empty;
+            if (world[currentX + 1, currentY].Type == TileType.Empty)
+            {
+                t.Add(Direction.Right);
+            }
 
+            if (world[currentX, currentY - 1].Type == TileType.Empty)
+            {
+                t.Add(Direction.Up);
+            }
+
+            if (world[currentX, currentY + 1].Type == TileType.Empty)
+            {
+                t.Add(Direction.Down);
+            }
+
+            return t;
         }
 
-        world[currentX + deltaX, currentY + deltaY].Type = TileType.Robot;
-        world[currentX, currentY].Type = TileType.Empty;
 
-        currentX += deltaX;
-        currentY += deltaY;
     }
+
+
+    //for (int i = ymax + 1; i < lines.Length; i++)
+    //{
+    //    foreach (var c in lines[i])
+    //    {
+    //        Direction movement;
+
+    //        switch (c)
+    //        {
+    //            case '^':
+    //                movement = Direction.Up;
+    //                break;
+    //            case 'v':
+    //                movement = Direction.Down;
+    //                break;
+    //            case '<':
+    //                movement = Direction.Left;
+    //                break;
+    //            case '>':
+    //                movement = Direction.Right;
+    //                break;
+    //            default:
+    //                throw new Exception("Invalid movement");
+    //        }
+
+    //        movements.Add(movement);
+    //    }
+    //}
+
+
+
+
+    //private static void Move(Direction m)
+    //{
+    //    int deltaX;
+    //    int deltaY;
+
+    //    switch (m)
+    //    {
+    //        case Direction.Up:
+    //            deltaX = 0;
+    //            deltaY = -1;
+    //            break;
+    //        case Direction.Down:
+    //            deltaX = 0;
+    //            deltaY = 1;
+    //            break;
+    //        case Direction.Left:
+    //            deltaX = -1;
+    //            deltaY = 0;
+    //            break;
+    //        case Direction.Right:
+    //            deltaX = 1;
+    //            deltaY = 0;
+    //            break;
+    //        default:
+    //            throw new Exception("Invalid movement");
+    //    }
+
+    //    // Spin to find the next empty spot in the direction of movement
+    //    int x = currentX + deltaX;
+    //    int y = currentY + deltaY;
+    //    List<Tile> tomove = new();
+
+    //    while (world[x, y].Type != TileType.Empty)
+    //    {
+    //        if (x < 0 || x >= xmax || y < 0 || y >= ymax || world[x, y].Type == TileType.Wall)
+    //        {
+    //            // Movement not possible
+    //            tomove.Clear();
+    //            return;
+    //        }
+
+    //        tomove.Add(world[x, y]);
+    //        x += deltaX;
+    //        y += deltaY;
+    //    }
+
+    //    tomove.Reverse();
+
+    //    foreach (var t in tomove)
+    //    {
+    //        int destX = t.Coordinate.X + deltaX;
+    //        int destY = t.Coordinate.Y + deltaY;
+
+    //        int srcX = t.Coordinate.X;
+    //        int srcY = t.Coordinate.Y;
+
+    //        world[destX, destY].Type = TileType.Blocker;
+    //        world[srcX, srcY].Type = TileType.Empty;
+
+    //    }
+
+    //    world[currentX + deltaX, currentY + deltaY].Type = TileType.Robot;
+    //    world[currentX, currentY].Type = TileType.Empty;
+
+    //    currentX += deltaX;
+    //    currentY += deltaY;
+    //}
 
     private static void Dumpworld()
     {
@@ -215,24 +279,33 @@
             for (int x = 0; x < xmax; x++)
             {
                 char c;
-                switch (world[x, y].Type)
-                {
-                    case TileType.Empty:
-                        c = '.';
-                        break;
-                    case TileType.Wall:
-                        c = '#';
-                        break;
-                    case TileType.Blocker:
-                        c = 'O';
-                        break;
-                    case TileType.Robot:
-                        c = '@';
-                        break;
-                    default:
-                        c = 'X';
-                        break;
-                }
+
+                //if (world[x, y].Score > -1)
+                //{
+                //    c = world[x, y].Score.ToString();
+                //}
+                //else
+                //{
+
+                    switch (world[x, y].Type)
+                    {
+                        case TileType.Empty:
+                            c = '.';
+                            break;
+                        case TileType.Wall:
+                            c = '#';
+                            break;
+                        case TileType.Reindeer:
+                            c = 'S';
+                            break;
+                        case TileType.End:
+                            c = 'E';
+                            break;
+                        default:
+                            c = 'X';
+                            break;
+                    }
+                //}
 
                 Console.Write(c);
             }
